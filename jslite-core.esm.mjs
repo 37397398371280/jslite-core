@@ -1,4 +1,7 @@
-import lite from "./lite.cjs.js";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const lite = require("./jslite-core.cjs.js");
 
 export default lite;
 
@@ -74,5 +77,8 @@ export const {
   withResolvers,
   sleep,
   retry,
-  storage
+  storage,
+  dom,
+  date,
+  encoding
 } = lite;
