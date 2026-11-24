@@ -2,7 +2,7 @@ const hasOwn = Object.prototype.hasOwnProperty;
 const toStr = Object.prototype.toString;
 const slice = Array.prototype.slice;
 
-export const version = "1.1.1";
+export const version = "1.1.2";
 
 export const era = {
   detect() {
@@ -1129,6 +1129,279 @@ export const encoding = {
   hexDecodeBytes: hexToBytes
 };
 
+const JS_KEYWORDS = new Set([
+  "break", "case", "catch", "class", "const", "continue",
+  "debugger", "default", "delete", "do", "else", "enum",
+  "export", "extends", "false", "finally", "for", "function",
+  "if", "import", "in", "instanceof", "let", "new",
+  "null", "return", "super", "switch", "this", "throw",
+  "true", "try", "typeof", "var", "void", "while", "with",
+  "yield", "await", "async"
+]);
+
+function isIdentStart(ch) {
+  return (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || ch === "_" || ch === "$";
+}
+
+function isIdentPart(ch) {
+  return isIdentStart(ch) || (ch >= "0" && ch <= "9");
+}
+
+function makeShortName(index) {
+  const first = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_";
+  const rest = `${first}0123456789`;
+  let n = index;
+  let name = first.charAt(n % first.length);
+  n = Math.floor(n / first.length);
+  while (n > 0) {
+    n--;
+    name += rest.charAt(n % rest.length);
+    n = Math.floor(n / rest.length);
+  }
+  return name;
+}
+
+function tokenizeJsForCompress(src) {
+  const tokens = [];
+  let i = 0;
+  const len = src.length;
+  let lastMeaningful = "";
+
+  while (i < len) {
+    const ch = src.charAt(i);
+    const next = i + 1 < len ? src.charAt(i + 1) : "";
+
+    if (ch === "/" && next === "/") {
+      i += 2;
+      while (i < len && src.charAt(i) !== "\n" && src.charAt(i) !== "\r") i++;
+      continue;
+    }
+
+    if (ch === "/" && next === "*") {
+      i += 2;
+      while (i < len && !(src.charAt(i) === "*" && i + 1 < len && src.charAt(i + 1) === "/")) i++;
+      i += 2;
+      tokens.push({ type: "ws", value: " " });
+      continue;
+    }
+
+    if (ch === "'" || ch === '"' || ch === "`") {
+      const quote = ch;
+      const start = i;
+      i++;
+      while (i < len) {
+        const qch = src.charAt(i);
+        if (qch === "\\") {
+          i += 2;
+          continue;
+        }
+        i++;
+        if (qch === quote) break;
+      }
+      const lit = src.slice(start, i);
+      tokens.push({ type: "string", value: lit });
+      lastMeaningful = lit;
+      continue;
+    }
+
+    if (ch === "/" && next !== "/" && next !== "*") {
+      const canBeRegex = !lastMeaningful ||
+        /[=(![{?:;,~&|^+-<>/*%]$/.test(lastMeaningful) ||
+        lastMeaningful === "return" || lastMeaningful === "case" ||
+        lastMeaningful === "throw" || lastMeaningful === "typeof" ||
+        lastMeaningful === "void" || lastMeaningful === "delete" ||
+        lastMeaningful === "in" || lastMeaningful === "instanceof" ||
+        lastMeaningful === "new" || lastMeaningful === "of";
+      if (canBeRegex) {
+        const rStart = i;
+        i++;
+        let inClass = false;
+        while (i < len) {
+          const rch = src.charAt(i);
+          if (rch === "\\") {
+            i += 2;
+            continue;
+          }
+          if (rch === "[") inClass = true;
+          else if (rch === "]") inClass = false;
+          else if (rch === "/" && !inClass) {
+            i++;
+            while (i < len && isIdentPart(src.charAt(i))) i++;
+            break;
+          }
+          i++;
+        }
+        const rx = src.slice(rStart, i);
+        tokens.push({ type: "regex", value: rx });
+        lastMeaningful = rx;
+        continue;
+      }
+    }
+
+    if (ch === " " || ch === "\t" || ch === "\r" || ch === "\n") {
+      let hasNewline = false;
+      while (i < len && (src.charAt(i) === " " || src.charAt(i) === "\t" || src.charAt(i) === "\r" || src.charAt(i) === "\n")) {
+        if (src.charAt(i) === "\n" || src.charAt(i) === "\r") hasNewline = true;
+        i++;
+      }
+      tokens.push({ type: "ws", value: hasNewline ? "\n" : " " });
+      continue;
+    }
+
+    if (isIdentStart(ch)) {
+      const idStart = i;
+      i++;
+      while (i < len && isIdentPart(src.charAt(i))) i++;
+      const word = src.slice(idStart, i);
+      const kind = JS_KEYWORDS.has(word) ? "keyword" : "ident";
+      tokens.push({ type: kind, value: word });
+      lastMeaningful = word;
+      continue;
+    }
+
+    const three = i + 2 < len ? src.slice(i, i + 3) : "";
+    const two = i + 1 < len ? src.slice(i, i + 2) : "";
+    let op = ch;
+    if (three === "===" || three === "!==" || three === ">>>" || three === "<<=" || three === ">>=") {
+      op = three;
+      i += 3;
+    } else if (
+      two === "==" || two === "!=" || two === "<=" || two === ">=" ||
+      two === "&&" || two === "||" || two === "??" || two === "++" ||
+      two === "--" || two === "+=" || two === "-=" || two === "*=" ||
+      two === "/=" || two === "%=" || two === "**" || two === "=>" ||
+      two === "?." || two === "<<" || two === ">>"
+    ) {
+      op = two;
+      i += 2;
+    } else {
+      i += 1;
+    }
+    tokens.push({ type: "punct", value: op });
+    lastMeaningful = op;
+  }
+
+  return tokens;
+}
+
+function needsSpaceBetween(prev, curr) {
+  if (!prev || !curr) return false;
+  const pIsWord = prev.type === "ident" || prev.type === "keyword";
+  const cIsWord = curr.type === "ident" || curr.type === "keyword";
+  const pIsNum = prev.type === "number";
+  const cIsNum = curr.type === "number";
+
+  if ((pIsWord || pIsNum) && (cIsWord || cIsNum)) return true;
+  if (prev.value === "+" && curr.value.indexOf("+") === 0) return true;
+  if (prev.value === "-" && curr.value.indexOf("-") === 0) return true;
+  if (prev.value === "/" && curr.type === "regex") return true;
+  return false;
+}
+
+export function compress(code, opts = {}) {
+  const source = String(isNil(code) ? "" : code);
+  const shouldMangle = opts.mangle !== false;
+  const tokens = tokenizeJsForCompress(source);
+
+  const declCounts = {};
+  if (shouldMangle) {
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i].type === "keyword" && (tokens[i].value === "var" || tokens[i].value === "let" || tokens[i].value === "const")) {
+        let j = i + 1;
+        while (j < tokens.length) {
+          if (tokens[j].type === "ws") { j++; continue; }
+          if (tokens[j].type === "ident") {
+            const varName = tokens[j].value;
+            declCounts[varName] = (hasOwn.call(declCounts, varName) ? declCounts[varName] : 0) + 1;
+          }
+          if (tokens[j].value === ";" || tokens[j].value === "\n") break;
+          j++;
+        }
+      }
+    }
+  }
+
+  const reservedNames = new Set();
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].type === "ident" && !hasOwn.call(declCounts, tokens[i].value)) {
+      reservedNames.add(tokens[i].value);
+    }
+  }
+
+  const renameMap = {};
+  let nextShortIdx = 0;
+  if (shouldMangle) {
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i].type === "ident") {
+        const name = tokens[i].value;
+        if (hasOwn.call(declCounts, name) && !hasOwn.call(renameMap, name)) {
+          let candidate;
+          do {
+            candidate = makeShortName(nextShortIdx++);
+          } while (JS_KEYWORDS.has(candidate) || reservedNames.has(candidate) || hasOwn.call(renameMap, candidate));
+          renameMap[name] = candidate.length < name.length ? candidate : name;
+        }
+      }
+    }
+  }
+
+  const compacted = tokens.map((tk) => {
+    if (tk.type === "ident" && hasOwn.call(renameMap, tk.value)) {
+      return { type: "ident", value: renameMap[tk.value] };
+    }
+    if (/^\d+(\.\d+)?([eE][+-]?\d+)?$/.test(tk.value) && tk.type === "ident") {
+      return { type: "number", value: tk.value };
+    }
+    return tk;
+  });
+
+  let out = "";
+  let lastOutToken = null;
+  let pendingNewline = false;
+
+  for (let i = 0; i < compacted.length; i++) {
+    const cur = compacted[i];
+    if (cur.type === "ws") {
+      if (cur.value === "\n") pendingNewline = true;
+      continue;
+    }
+
+    if (pendingNewline && lastOutToken) {
+      const canDropNewline =
+        /[{([=+\-*/%&|^?:;,~<>!]$/.test(lastOutToken.value) ||
+        /^[})\]=+\-*/%&|^?:;,~<>!]/.test(cur.value) ||
+        cur.value === "else";
+      if (!canDropNewline && needsSpaceBetween(lastOutToken, cur)) {
+        out += "\n";
+      }
+    } else if (needsSpaceBetween(lastOutToken, cur)) {
+      out += " ";
+    }
+
+    out += cur.value;
+    lastOutToken = cur;
+    pendingNewline = false;
+  }
+
+  out = trim(out);
+
+  const originalBytes = utf8Encode(source).length;
+  const compressedBytes = utf8Encode(out).length;
+  const savedBytes = originalBytes - compressedBytes;
+  const ratio = originalBytes > 0 ? roundTo((savedBytes / originalBytes) * 100, 2) : 0;
+
+  return {
+    code: out,
+    originalBytes,
+    compressedBytes,
+    savedBytes,
+    ratio,
+    renamed: renameMap
+  };
+}
+
+export const minify = compress;
+
 const lite = {
   version,
   era,
@@ -1204,7 +1477,9 @@ const lite = {
   storage,
   dom,
   date,
-  encoding
+  encoding,
+  compress,
+  minify
 };
 
 export default lite;
