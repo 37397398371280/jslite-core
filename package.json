@@ -13,6 +13,13 @@
       "default": "./lite.cjs.js"
     }
   },
+  "files": [
+    "lite.cjs.js",
+    "lite.esm.mjs",
+    "index.d.ts",
+    "docs.html",
+    "LICENSE"
+  ],
   "keywords": [
     "lite",
     "utility",
