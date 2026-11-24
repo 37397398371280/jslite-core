@@ -1,4 +1,4 @@
-/* litejs v2.0.0 | ES3-to-ES2026 Universal Lite Runtime | Zero Dependencies */
+/* jscore-lite v1.0.0 | ES3-to-ES2026 Universal Lite Runtime | Zero Dependencies */
 (function (root, factory) {
   if (typeof define === "function" && define.amd) {
     define([], factory);
