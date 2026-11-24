@@ -1,6 +1,6 @@
 {
   "name": "jslite-core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Zero-dependency JavaScript lite utility package designed to run from ES3 through ES2026.",
   "main": "./lite.cjs.js",
   "module": "./lite.esm.mjs",
