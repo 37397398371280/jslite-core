@@ -1,4 +1,3 @@
-/* jslite-core v1.0.0 | ES3-to-ES2026 Universal Lite Runtime | Zero Dependencies */
 (function (root, factory) {
   if (typeof define === "function" && define.amd) {
     define([], factory);
@@ -14,7 +13,6 @@
   var toStr = Object.prototype.toString;
   var slice = Array.prototype.slice;
 
-  // --- Era & Capability Detection (ES3 through ES2026) ---
   var era = {
     detect: function () {
       var caps = {
@@ -66,7 +64,6 @@
     }
   };
 
-  // --- Type & Guard Helpers ---
   var typeOf = function (val) {
     if (val === null) return "null";
     if (val === undefined) return "undefined";
@@ -120,7 +117,6 @@
     return false;
   };
 
-  // --- Iteration & Collection Helpers ---
   var each = function (collection, iteratee) {
     if (isNil(collection)) return collection;
     var i, len, key;
@@ -370,7 +366,6 @@
     return out;
   };
 
-  // --- Set Algebra ---
   var setOps = {
     toArray: function (s) {
       if (isArr(s)) return unique(s);
@@ -407,7 +402,6 @@
     }
   };
 
-  // --- Object, Path & Immutability Helpers ---
   var get = function (obj, path, fallback) {
     if (!isObj(obj) || !isStr(path)) return fallback;
     var normalized = path.replace(/\[(\d+)\]/g, ".$1");
@@ -556,7 +550,6 @@
     return false;
   };
 
-  // --- String, RegExp & Encoding Helpers ---
   var trim = function (str) {
     if (isNil(str)) return "";
     var s = String(str);
@@ -699,7 +692,6 @@
     }
   };
 
-  // --- Math & Number Helpers ---
   var clamp = function (num, min, max) {
     if (num < min) return min;
     if (num > max) return max;
@@ -733,7 +725,6 @@
     return Math.floor(Math.random() * (hi - lo + 1)) + lo;
   };
 
-  // --- Function & Timing Controls ---
   var once = function (fn) {
     var called = false;
     var result;
@@ -818,7 +809,6 @@
     return pfx + "_" + Math.random().toString(36).slice(2, 8) + "_" + (new Date().getTime()).toString(36).slice(-4);
   };
 
-  // --- Promise / Async / Callback Bridge ---
   var hasPromise = function () {
     return typeof Promise === "function" && isFn(Promise.resolve);
   };
@@ -903,7 +893,6 @@
     });
   };
 
-  // --- Safe Storage Adapter ---
   var memStore = {};
   var storage = {
     get: function (key, fallback) {
@@ -914,7 +903,7 @@
           if (raw === null || raw === undefined) return defVal;
           return typeof JSON !== "undefined" && JSON.parse ? JSON.parse(raw) : raw;
         }
-      } catch (e) { /* fallback */ }
+      } catch (e) { }
       return hasOwn.call(memStore, key) ? clone(memStore[key], true) : defVal;
     },
     set: function (key, value) {
@@ -924,7 +913,7 @@
           localStorage.setItem(key, payload);
           return true;
         }
-      } catch (e) { /* fallback */ }
+      } catch (e) { }
       memStore[key] = clone(value, true);
       return true;
     },
@@ -933,7 +922,7 @@
         if (typeof localStorage !== "undefined" && localStorage) {
           localStorage.removeItem(key);
         }
-      } catch (e) { /* fallback */ }
+      } catch (e) { }
       if (hasOwn.call(memStore, key)) {
         try { delete memStore[key]; } catch (e2) { memStore[key] = undefined; }
       }
