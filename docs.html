@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>jslite-core (v1.0.1) — Deep Usage Guide</title>
+  <title>jslite-core (v2.0.0) Documentation</title>
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      max-width: 960px;
+      max-width: 980px;
       margin: 40px auto;
       padding: 0 20px;
       line-height: 1.65;
@@ -82,236 +82,173 @@
   </style>
 </head>
 <body>
-  <h1><code>jslite-core</code> (v1.0.1) Deep Usage Guide</h1>
+  <h1><code>jslite-core</code> (v2.0.0) Documentation</h1>
   <p>
-    <strong><code>jslite-core</code></strong> is a zero-dependency JavaScript utility package authored in ES3-safe syntax with runtime feature detection and graceful fallbacks spanning <strong>ECMAScript 3 (ES3)</strong> through <strong>ECMAScript 2026 (ES2026)</strong>.
+    <strong><code>jslite-core</code></strong> is a zero-dependency JavaScript lite utility package written in ES3-safe syntax with runtime feature detection and graceful fallbacks spanning <strong>ECMAScript 3 (ES3)</strong> through <strong>ECMAScript 2026 (ES2026)</strong>.
   </p>
 
   <nav class="toc">
     <strong>Contents</strong>
     <ul>
-      <li><a href="#architecture">Architecture &amp; Module Entry Points</a></li>
+      <li><a href="#modules">Modules &amp; Entry Points</a></li>
       <li><a href="#era">1. Era &amp; Capability Detection (<code>lite.era</code>)</a></li>
       <li><a href="#guards">2. Type &amp; Value Guards</a></li>
       <li><a href="#collections">3. Collections, Iteration &amp; Set Algebra</a></li>
-      <li><a href="#objects">4. Objects, Deep Paths, Cloning &amp; Equality</a></li>
+      <li><a href="#objects">4. Objects, Deep Paths, Circular Safety &amp; Equality</a></li>
       <li><a href="#strings">5. Strings, Templates, Regex &amp; Query Strings</a></li>
       <li><a href="#math-async">6. Math, Function Wrappers, Timing, Async &amp; Storage</a></li>
+      <li><a href="#dom">7. DOM Helpers (<code>lite.dom</code>)</a></li>
+      <li><a href="#date">8. Date Utilities (<code>lite.date</code>)</a></li>
+      <li><a href="#encoding">9. Encoding Utilities (<code>lite.encoding</code>)</a></li>
     </ul>
   </nav>
 
-  <h2 id="architecture">Architecture &amp; Module Entry Points</h2>
+  <h2 id="modules">Modules &amp; Entry Points</h2>
   <ul>
-    <li><strong><code>index.js</code> (or <code>jslite-core.cjs.js</code>):</strong> Universal entry point using an IIFE UMD/CommonJS/browser-global loader. Uses <code>var</code>, function expressions, no trailing commas in array or object literals, and no ES3 reserved words as property or variable names so legacy script engines can parse the file.</li>
-    <li><strong><code>index.mjs</code> (or <code>jslite-core.esm.mjs</code>):</strong> ES module entry point re-exporting <code>lite</code> as the default export alongside named exports for every utility.</li>
-    <li><strong><code>index.d.ts</code>:</strong> TypeScript definitions covering generics, options objects, <code>EraReport</code>, and <code>LiteAPI</code>.</li>
-    <li><strong>Global identifier:</strong> Exposes <code>lite</code> on the global object (<code>this</code> in the UMD wrapper) when loaded outside AMD or CommonJS.</li>
+    <li><strong><code>jslite-core.cjs.js</code>:</strong> Universal UMD/CommonJS/Browser-global (<code>lite</code>) core written in ES3-parseable syntax.</li>
+    <li><strong><code>jslite-core.esm.mjs</code>:</strong> ES module wrapper exporting <code>lite</code> as default alongside named exports for every utility.</li>
+    <li><strong><code>index.d.ts</code>:</strong> TypeScript declarations covering all top-level helpers and sub-APIs (<code>era</code>, <code>setOps</code>, <code>query</code>, <code>storage</code>, <code>dom</code>, <code>date</code>, <code>encoding</code>).</li>
+    <li><strong><code>package.json</code>:</strong> Package manifest with <code>main</code>, <code>module</code>, <code>types</code>, <code>exports</code>, <code>repository</code>, and <code>license</code> (<code>GPL-3.0</code>).</li>
+    <li><strong><code>readme.md</code> &amp; <code>LICENSE</code>:</strong> Package overview and GNU General Public License v3.0.</li>
   </ul>
+  <pre><code>// ES Modules
+import lite, { get, groupBy, dom, date, encoding } from "jslite-core";
+
+// CommonJS
+const lite = require("jslite-core");
+
+// Browser global script tag
+&lt;script src="jslite-core.cjs.js"&gt;&lt;/script&gt;</code></pre>
 
   <h2 id="era">1. Era &amp; Capability Detection (<code>lite.era</code>)</h2>
-  <p>
-    <code>lite.era</code> inspects the host runtime at call time to determine available ECMAScript capabilities without throwing reference errors on older engines.
-  </p>
   <pre><code>var report = lite.era.detect();
-// report.highest -&gt; highest detected era string (e.g. "ES3", "ES5", "ES6", "ES2022", "ES2025", "ES2026")
-// report.capabilities -&gt; boolean map:
-//   es3, es5, es6, es2016, es2017, es2018, es2019,
-//   es2020, es2021, es2022, es2023, es2024, es2025, es2026
+// report.highest -&gt; "ES3" .. "ES2026"
+// report.capabilities -&gt; boolean flags for es3..es2026
 
-if (lite.era.isAtLeast("ES2022")) {
-  // Branch when ES2022+ capability checks pass
-}</code></pre>
-  <ul>
-    <li>Accepts era strings such as <code>"ES3"</code>, <code>"ES5"</code>, <code>"ES6"</code>, <code>"ES2015"</code>, <code>"ES2016"</code> through <code>"ES2026"</code> (case-insensitive; non-alphanumeric characters are stripped).</li>
-    <li><code>ES2026</code> checks for <code>Math.sumPrecise</code> or <code>Temporal</code>.</li>
-  </ul>
+lite.era.isAtLeast("ES2022"); // =&gt; true or false</code></pre>
 
   <h2 id="guards">2. Type &amp; Value Guards</h2>
-  <p>
-    Standard <code>typeof</code> and <code>instanceof</code> checks have edge cases across realms and eras. These helpers normalize checks across primitives, built-ins, and collections:
-  </p>
   <table>
     <thead>
       <tr>
         <th>Function</th>
-        <th>Behavior &amp; Edge Cases</th>
-        <th>Example</th>
+        <th>Summary</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td><code>typeOf(val)</code></td>
-        <td>Returns <code>"null"</code>, <code>"undefined"</code>, <code>"array"</code>, <code>"date"</code>, <code>"regexp"</code>, <code>"number"</code>, <code>"string"</code>, <code>"boolean"</code>, <code>"function"</code>, <code>"error"</code>, <code>"map"</code>, <code>"set"</code>, <code>"weakmap"</code>, <code>"weakset"</code>, <code>"promise"</code>, or <code>typeof val</code>.</td>
-        <td><code>lite.typeOf([]) // "array"</code></td>
+        <td>Returns <code>"null"</code>, <code>"undefined"</code>, <code>"array"</code>, <code>"date"</code>, <code>"regexp"</code>, <code>"map"</code>, <code>"set"</code>, <code>"weakmap"</code>, <code>"weakset"</code>, <code>"promise"</code>, <code>"error"</code>, or <code>typeof val</code>.</td>
       </tr>
       <tr>
-        <td><code>isNil(v)</code></td>
-        <td><code>true</code> only for <code>null</code> or <code>undefined</code>.</td>
-        <td><code>lite.isNil(0) // false</code></td>
-      </tr>
-      <tr>
-        <td><code>isObj(v)</code></td>
-        <td><code>true</code> for non-null values where <code>typeof v</code> is <code>"object"</code> or <code>"function"</code>.</td>
-        <td><code>lite.isObj(null) // false</code></td>
-      </tr>
-      <tr>
-        <td><code>isPlainObj(v)</code></td>
-        <td><code>true</code> for plain object literals or objects whose prototype is <code>Object.prototype</code> or <code>null</code>; <code>false</code> for arrays, Dates, RegExps, Maps, Sets, and class instances.</td>
-        <td><code>lite.isPlainObj({}) // true</code></td>
-      </tr>
-      <tr>
-        <td><code>isFn(v)</code></td>
-        <td><code>typeof v === "function"</code>.</td>
-        <td><code>lite.isFn(function(){}) // true</code></td>
-      </tr>
-      <tr>
-        <td><code>isArr(v)</code></td>
-        <td>Uses <code>Array.isArray</code> when present, falling back to <code>Object.prototype.toString</code>.</td>
-        <td><code>lite.isArr([1, 2]) // true</code></td>
-      </tr>
-      <tr>
-        <td><code>isNum(v)</code></td>
-        <td><code>true</code> only for finite numbers (<code>typeof v === "number" &amp;&amp; !isNaN(v) &amp;&amp; isFinite(v)</code>).</td>
-        <td><code>lite.isNum(NaN) // false</code></td>
-      </tr>
-      <tr>
-        <td><code>isStr(v)</code></td>
-        <td><code>typeof v === "string"</code>.</td>
-        <td><code>lite.isStr("hi") // true</code></td>
-      </tr>
-      <tr>
-        <td><code>isBool(v)</code></td>
-        <td><code>v === true || v === false</code>.</td>
-        <td><code>lite.isBool(1) // false</code></td>
-      </tr>
-      <tr>
-        <td><code>isEmpty(v)</code></td>
-        <td><code>true</code> for <code>null</code>, <code>undefined</code>, <code>""</code>, <code>[]</code>, empty <code>Map</code>/<code>Set</code>, or objects with zero own enumerable properties.</td>
-        <td><code>lite.isEmpty({}) // true</code></td>
+        <td><code>isNil</code>, <code>isObj</code>, <code>isPlainObj</code>, <code>isFn</code>, <code>isArr</code>, <code>isNum</code>, <code>isStr</code>, <code>isBool</code>, <code>isEmpty</code></td>
+        <td>Type and emptiness guards (<code>isNum</code> rejects <code>NaN</code> and <code>Infinity</code>; <code>isEmpty</code> supports strings, arrays, objects, <code>Map</code>, and <code>Set</code>).</td>
       </tr>
     </tbody>
   </table>
 
   <h2 id="collections">3. Collections, Iteration &amp; Set Algebra</h2>
-  <h3>Iteration, Filtering &amp; Searching</h3>
-  <ul>
-    <li><strong><code>each(collection, iteratee)</code>:</strong> Iterates arrays, strings, array-likes with a numeric <code>.length</code>, <code>Map</code>, <code>Set</code>, or own enumerable properties of plain objects. Returning <code>false</code> from <code>iteratee</code> stops iteration early.</li>
-    <li><strong><code>map(collection, iterateeOrKey)</code>:</strong> Accepts a callback <code>(val, key, collection)</code> or a string property name to pluck a field from each element.</li>
-    <li><strong><code>filter(collection, predicate)</code></strong> &amp; <strong><code>reject(collection, predicate)</code>:</strong> Returns matching or non-matching items in an array.</li>
-    <li><strong><code>reduce(collection, reducer, initial)</code>:</strong> Folds values from left to right. Uses <code>initial</code> when provided (and not <code>undefined</code>); otherwise starts with the first element.</li>
-    <li><strong><code>find(collection, predicate)</code></strong> &amp; <strong><code>findLast(arr, predicate)</code>:</strong> Returns the first matching item in collection order or the last matching item in an array (<code>undefined</code> if none match).</li>
-    <li><strong><code>some(collection, predicate)</code></strong> &amp; <strong><code>every(collection, predicate)</code>:</strong> Short-circuiting predicate checks across collections.</li>
-    <li><strong><code>includes(arr, item, fromIndex)</code>:</strong> Checks array membership with negative <code>fromIndex</code> support and <code>NaN</code> matching.</li>
-    <li><strong><code>at(arrOrStr, index)</code>:</strong> Reads positive or negative indices (<code>-1</code> for the last element/character) on arrays or strings, returning <code>undefined</code> out of bounds.</li>
-  </ul>
+  <pre><code>lite.groupBy(items, "role");
+lite.countBy(items, "role");
+lite.keyBy(items, "id");
+lite.sortBy(items, "score", true);
+lite.chunk([1, 2, 3, 4], 2);
+lite.compact([0, 1, false, "", 2]);
+lite.unique([1, 2, 2, 3]);
+lite.flatten([[1], [2, [3]]], 2);
+lite.flatMap([1, 2], function (n) { return [n, n * 2]; });
+lite.zip(["a", "b"], [1, 2]);
+lite.range(0, 10, 2);
 
-  <h3>Transformation, Grouping &amp; Sequences</h3>
-  <pre><code>var rows = [
-  { id: "u1", team: "core", pts: 10 },
-  { id: "u2", team: "ui",   pts: 25 },
-  { id: "u3", team: "core", pts: 15 }
-];
+lite.setOps.union([1, 2], [2, 3]);
+lite.setOps.intersection([1, 2, 3], [2, 3, 4]);
+lite.setOps.difference([1, 2, 3], [2]);
+lite.setOps.symmetricDifference([1, 2], [2, 3]);
+lite.setOps.isSubsetOf([1, 2], [1, 2, 3]);
+lite.setOps.isSupersetOf([1, 2, 3], [1, 2]);
+lite.setOps.isDisjointFrom([1], [2, 3]);</code></pre>
 
-lite.groupBy(rows, "team");         // { core: [...], ui: [...] }
-lite.countBy(rows, "team");         // { core: 2, ui: 1 }
-lite.keyBy(rows, "id");             // { u1: {...}, u2: {...}, u3: {...} }
-lite.sortBy(rows, "pts", true);     // new array sorted descending by pts
-lite.chunk([1, 2, 3, 4, 5], 2);     // [[1, 2], [3, 4], [5]]
-lite.compact([0, 1, false, 2, ""]); // [1, 2]
-lite.unique([1, 2, 2, 3], null);    // [1, 2, 3]
-lite.flatten([[1], [2, [3]]], 2);   // [1, 2, 3]
-lite.flatMap([1, 2], function (n) { return [n, n * 10]; }); // [1, 10, 2, 20]
-lite.zip(["a", "b"], [1, 2]);       // [["a", 1], ["b", 2]]
-lite.range(0, 10, 2);               // [0, 2, 4, 6, 8]
-lite.range(5);                      // [0, 1, 2, 3, 4]</code></pre>
+  <h2 id="objects">4. Objects, Deep Paths, Circular Safety &amp; Equality</h2>
+  <p>
+    <code>clone(val, deep)</code> and <code>equal(a, b)</code> track visited object and array references so circular references do not cause infinite recursion.
+  </p>
+  <pre><code>var node = { name: "root" };
+node.self = node;
 
-  <h3>Set Algebra (<code>lite.setOps</code>)</h3>
-  <p><code>lite.setOps</code> works on both <code>Set</code> instances and plain arrays (deduplicating inputs):</p>
-  <ul>
-    <li><code>toArray(s)</code></li>
-    <li><code>union(a, b)</code></li>
-    <li><code>intersection(a, b)</code></li>
-    <li><code>difference(a, b)</code> (items in <code>a</code> not in <code>b</code>)</li>
-    <li><code>symmetricDifference(a, b)</code> (items in either <code>a</code> or <code>b</code>, but not both)</li>
-    <li><code>isSubsetOf(a, b)</code></li>
-    <li><code>isSupersetOf(a, b)</code></li>
-    <li><code>isDisjointFrom(a, b)</code></li>
-  </ul>
+var cloned = lite.clone(node, true);
+lite.equal(node, cloned); // =&gt; true
 
-  <h2 id="objects">4. Objects, Deep Paths, Cloning &amp; Equality</h2>
-  <pre><code>var state = {};
-lite.set(state, "player.inventory[0].item", "sword");
-lite.get(state, "player.inventory[0].item", "none"); // "sword"
-lite.get(state, "player.missing.path", "fallback");   // "fallback"
-
-lite.keysOf({ a: 1, b: 2 });               // ["a", "b"]
-lite.valuesOf({ a: 1, b: 2 });             // [1, 2]
-lite.entriesOf({ a: 1, b: 2 });            // [["a", 1], ["b", 2]]
-lite.fromEntries([["x", 10], ["y", 20]]);  // { x: 10, y: 20 }
-
-lite.pick({ a: 1, b: 2, c: 3 }, ["a", "c"]); // { a: 1, c: 3 }
-lite.omit({ a: 1, b: 2, c: 3 }, ["b"]);      // { a: 1, c: 3 }
-
-var copy = lite.clone(state, true);     // deep clone (handles Date, RegExp, arrays, objects)
-var merged = lite.merge(objA, objB);    // deep-merges plain objects into a new object
-lite.equal(state, copy);                // true (deep structural equality)</code></pre>
-  <ul>
-    <li><code>set(obj, path, value)</code> automatically creates intermediate <code>{}</code> objects or <code>[]</code> arrays when the next path segment is numeric (<code>^\d+$</code>).</li>
-    <li><code>equal(a, b)</code> handles primitives, <code>NaN === NaN</code>, <code>Date</code> timestamps, <code>RegExp</code> source/flags, arrays, and plain/nested objects.</li>
-  </ul>
+var state = {};
+lite.set(state, "items[0].title", "Hello");
+lite.get(state, "items[0].title", ""); // =&gt; "Hello"
+lite.pick({ a: 1, b: 2, c: 3 }, ["a", "c"]);
+lite.omit({ a: 1, b: 2, c: 3 }, ["b"]);
+lite.merge({ a: { x: 1 } }, { a: { y: 2 } });</code></pre>
 
   <h2 id="strings">5. Strings, Templates, Regex &amp; Query Strings</h2>
-  <pre><code>lite.trim("  hello  ");                         // "hello"
-lite.padStart("7", 3, "0");                       // "007"
-lite.padEnd("ok", 4, ".");                        // "ok.."
-lite.replaceAll("a.b.c", ".", "-");               // "a-b-c"
-lite.escapeRegex("price: $12.50 (USD)?");          // "price: \\$12\\.50 \\(USD\\)\\?"
-
-lite.camelCase("foo_bar-baz");                    // "fooBarBaz"
-lite.kebabCase("fooBarBaz");                      // "foo-bar-baz"
-lite.snakeCase("fooBarBaz");                      // "foo_bar_baz"
-lite.capitalize("javaScript");                    // "JavaScript"
-
-lite.template("Hi {{ user.name }} ({{ role }})", {
-  user: { name: "Colten" },
-  role: "owner"
-});                                               // "Hi Colten (owner)"
-
-var params = lite.query.parse("?tag=js&amp;tag=lite&amp;page=2");
-// { tag: ["js", "lite"], page: "2" }
-lite.query.stringify({ tag: ["js", "lite"], page: 2, skip: null });
-// "tag=js&amp;tag=lite&amp;page=2"</code></pre>
-  <ul>
-    <li><code>escapeRegex</code> delegates to native <code>RegExp.escape</code> when available and otherwise escapes standard regex metacharacters.</li>
-    <li><code>template</code> resolves dot/bracket paths via <code>lite.get</code> and replaces missing or <code>null</code>/<code>undefined</code> values with <code>""</code>.</li>
-  </ul>
+  <pre><code>lite.trim("  hi  ");
+lite.padStart("5", 3, "0"); // =&gt; "005"
+lite.padEnd("5", 3, "0");   // =&gt; "500"
+lite.replaceAll("a.b.c", ".", "-");
+lite.escapeRegex("a+b*(c)?");
+lite.camelCase("foo_bar-baz");
+lite.kebabCase("fooBarBaz");
+lite.snakeCase("fooBarBaz");
+lite.capitalize("jslite");
+lite.template("Hello, {{ user.name }}!", { user: { name: "Ada" } });
+lite.query.parse("?tag=a&amp;tag=b&amp;v=2");
+lite.query.stringify({ tag: ["a", "b"], v: 2 });</code></pre>
 
   <h2 id="math-async">6. Math, Function Wrappers, Timing, Async &amp; Storage</h2>
-  <h3>Numbers &amp; Math</h3>
-  <ul>
-    <li><code>clamp(num, min, max)</code>: Restricts <code>num</code> to <code>[min, max]</code>.</li>
-    <li><code>sumPrecise(values)</code>: Calls native <code>Math.sumPrecise(values)</code> when available; otherwise uses Kahan compensated summation to reduce floating-point drift (such as <code>[0.1, 0.2, 0.3]</code>).</li>
-    <li><code>roundTo(num, decimals)</code>: Rounds to <code>decimals</code> decimal places (defaults to <code>0</code>).</li>
-    <li><code>randomInt(min, max)</code>: Returns a random integer inclusive of <code>min</code> and <code>max</code>.</li>
-  </ul>
+  <pre><code>lite.clamp(120, 0, 100);
+lite.sumPrecise([0.1, 0.2, 0.3]);
+lite.roundTo(3.14159, 2);
+lite.randomInt(1, 6);
 
-  <h3>Function Composition, Debounce, Throttle &amp; IDs</h3>
-  <ul>
-    <li><code>once(fn)</code>: Runs <code>fn</code> at most once and caches its first return value.</li>
-    <li><code>memoize(fn, resolver)</code>: Caches results by custom <code>resolver</code> or <code>JSON.stringify(args)</code>.</li>
-    <li><code>pipe(f, g, h)</code>: Left-to-right function composition (<code>h(g(f(x)))</code>).</li>
-    <li><code>compose(f, g, h)</code>: Right-to-left function composition (<code>f(g(h(x)))</code>).</li>
-    <li><code>debounce(fn, wait)</code>: Delays invoking <code>fn</code> until <code>wait</code> ms (default <code>200</code>) have elapsed since the last call.</li>
-    <li><code>throttle(fn, limit)</code>: Invokes <code>fn</code> immediately on the leading edge, enforces a <code>limit</code> ms cooldown (default <code>200</code>), and flushes the latest trailing call once the cooldown finishes.</li>
-    <li><code>uid(prefix)</code>: Generates an identifier string combining <code>prefix</code> (default <code>"lite"</code>), random base-36 characters, and a timestamp suffix.</li>
-  </ul>
+var onceFn = lite.once(function () { return lite.uid("id"); });
+var memoFn = lite.memoize(function (x) { return x * 2; });
+var fn = lite.pipe(function (x) { return x + 1; }, function (x) { return x * 3; });
+var composed = lite.compose(function (x) { return x * 3; }, function (x) { return x + 1; });
+var debounced = lite.debounce(function () {}, 200);
+var throttled = lite.throttle(function () {}, 200);
 
-  <h3>Async &amp; Storage</h3>
-  <ul>
-    <li><code>withResolvers()</code>: Returns <code>{ promise, resolve, reject }</code> using native <code>Promise.withResolvers</code> when available or a standard <code>Promise</code> constructor wrapper (with <code>promise: null</code> if <code>Promise</code> is absent).</li>
-    <li><code>sleep(ms, cb)</code>: Returns a <code>Promise</code> resolving after <code>ms</code> ms when <code>Promise</code> exists, and invokes optional callback <code>cb</code>.</li>
-    <li><code>retry(fn, opts, cb)</code>: Retries <code>fn(attempt)</code> up to <code>opts.retries</code> (default <code>3</code>) with exponential backoff <code>opts.delay * Math.pow(opts.backoff, attempt)</code> (defaults: <code>delay: 200</code>, <code>backoff: 2</code>). Includes a synchronous/callback path when <code>Promise</code> is unavailable.</li>
-    <li><code>storage</code>: <code>{ get(key, fallback), set(key, value), remove(key) }</code> serializes/deserializes JSON in <code>localStorage</code> and falls back to an in-memory store if <code>localStorage</code> is unavailable or throws.</li>
-  </ul>
+await lite.sleep(50);
+await lite.retry(function () { return "ok"; }, { retries: 3, delay: 100, backoff: 2 });
+var deferred = lite.withResolvers();
+
+lite.storage.set("prefs", { theme: "dark" });
+lite.storage.get("prefs", {});
+lite.storage.remove("prefs");</code></pre>
+
+  <h2 id="dom">7. DOM Helpers (<code>lite.dom</code>)</h2>
+  <pre><code>var btn = lite.dom.create("button", {
+  class: "btn primary",
+  style: { cursor: "pointer" },
+  onclick: function () { lite.dom.copyText("Copied!"); }
+}, ["Copy"]);
+
+var off = lite.dom.on(document, "keydown", function (e) { /* ... */ });
+off(); // remove listener
+
+var el = lite.dom.$("#app");
+var all = lite.dom.$$(".item", el);</code></pre>
+
+  <h2 id="date">8. Date Utilities (<code>lite.date</code>)</h2>
+  <pre><code>lite.date.now();
+lite.date.isValid("2026-11-24"); // =&gt; true
+lite.date.format(new Date(2026, 10, 24, 8, 21, 0), "YYYY-MM-DD HH:mm:ss");
+var tomorrow = lite.date.addDays(new Date(), 1);
+lite.date.diffDays("2026-11-20", "2026-11-24");
+lite.date.startOfDay(new Date(), true);</code></pre>
+
+  <h2 id="encoding">9. Encoding Utilities (<code>lite.encoding</code>)</h2>
+  <pre><code>var bytes = lite.encoding.utf8Encode("Hello 🌍");
+var text = lite.encoding.utf8Decode(bytes);
+
+var b64 = lite.encoding.base64Encode("Hello 🌍");
+lite.encoding.base64Decode(b64); // =&gt; "Hello 🌍"
+
+var hex = lite.encoding.hexEncode("ABC");
+lite.encoding.hexDecode(hex); // =&gt; "ABC"</code></pre>
 </body>
 </html>
