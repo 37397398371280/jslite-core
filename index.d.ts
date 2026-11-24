@@ -136,6 +136,19 @@ export interface EncodingAPI {
   hexDecodeBytes(hex?: string | null): number[];
 }
 
+export interface CompressOptions {
+  mangle?: boolean;
+}
+
+export interface CompressResult {
+  code: string;
+  originalBytes: number;
+  compressedBytes: number;
+  savedBytes: number;
+  ratio: number;
+  renamed: Record<string, string>;
+}
+
 export interface LiteAPI {
   version: string;
   era: EraAPI;
@@ -234,6 +247,9 @@ export interface LiteAPI {
   dom: DomAPI;
   date: DateAPI;
   encoding: EncodingAPI;
+
+  compress(code?: string | null, opts?: CompressOptions): CompressResult;
+  minify(code?: string | null, opts?: CompressOptions): CompressResult;
 }
 
 declare const lite: LiteAPI;
@@ -315,3 +331,5 @@ export const storage: LiteAPI["storage"];
 export const dom: LiteAPI["dom"];
 export const date: LiteAPI["date"];
 export const encoding: LiteAPI["encoding"];
+export const compress: LiteAPI["compress"];
+export const minify: LiteAPI["minify"];
