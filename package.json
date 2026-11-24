@@ -5,6 +5,10 @@
   "main": "./lite.cjs.js",
   "module": "./lite.esm.mjs",
   "types": "./index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/37397398371280/jslite-core.git"
+  },
   "exports": {
     ".": {
       "types": "./index.d.ts",
@@ -18,6 +22,7 @@
     "lite.esm.mjs",
     "index.d.ts",
     "docs.html",
+    "readme.md",
     "LICENSE"
   ],
   "keywords": [
