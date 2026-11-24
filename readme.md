@@ -1,4 +1,4 @@
-# jslite-core (`v1.0.1`)
+# jslite-core (`v1.1.0`)
 
 A zero-dependency JavaScript lite utility package engineered to parse and execute across **ECMAScript 3 (ES3)** engines while exposing ergonomic helpers from **ES5 through ES2026**.
 
