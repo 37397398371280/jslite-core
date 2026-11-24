@@ -72,6 +72,14 @@
     nav.toc ul {
       margin: 6px 0 0;
     }
+    .notice {
+      background: #fffbeb;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 12px 0;
+      color: #78350f;
+    }
     a {
       color: #0369a1;
       text-decoration: none;
@@ -200,6 +208,9 @@ lite.query.parse("?tag=a&amp;tag=b&amp;v=2");
 lite.query.stringify({ tag: ["a", "b"], v: 2 });</code></pre>
 
   <h2 id="math-async">6. Math, Function Wrappers, Timing, Async &amp; Storage</h2>
+  <p class="notice">
+    <strong>Notice:</strong> Top-level <code>await</code> in the snippet below is valid only inside ES module contexts (such as <code>&lt;script type="module"&gt;</code> or <code>.mjs</code> files). In classic <code>&lt;script&gt;</code> tags, CommonJS, or legacy runtimes, place <code>await</code> inside an <code>async</code> function or use <code>.then()</code> / callbacks.
+  </p>
   <pre><code>lite.clamp(120, 0, 100);
 lite.sumPrecise([0.1, 0.2, 0.3]);
 lite.roundTo(3.14159, 2);
