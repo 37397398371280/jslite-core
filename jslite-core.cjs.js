@@ -873,7 +873,6 @@
 
   var on = function (target, eventName, handler, opts) {
     if (!target || !isStr(eventName) || !isFn(handler)) return function () {};
-    var useCapture = isBool(opts) ? opts : !!(opts && opts.capture);
     if (isFn(target.addEventListener)) {
       target.addEventListener(eventName, handler, opts || false);
       return function () { target.removeEventListener(eventName, handler, opts || false); };
@@ -1180,8 +1179,285 @@
     hexDecodeBytes: hexToBytes
   };
 
+  var JS_KEYWORDS = {
+    "break": 1, "case": 1, "catch": 1, "class": 1, "const": 1, "continue": 1,
+    "debugger": 1, "default": 1, "delete": 1, "do": 1, "else": 1, "enum": 1,
+    "export": 1, "extends": 1, "false": 1, "finally": 1, "for": 1, "function": 1,
+    "if": 1, "import": 1, "in": 1, "instanceof": 1, "let": 1, "new": 1,
+    "null": 1, "return": 1, "super": 1, "switch": 1, "this": 1, "throw": 1,
+    "true": 1, "try": 1, "typeof": 1, "var": 1, "void": 1, "while": 1, "with": 1,
+    "yield": 1, "await": 1, "async": 1
+  };
+
+  var isIdentStart = function (ch) {
+    return (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || ch === "_" || ch === "$";
+  };
+
+  var isIdentPart = function (ch) {
+    return isIdentStart(ch) || (ch >= "0" && ch <= "9");
+  };
+
+  var makeShortName = function (index) {
+    var first = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_";
+    var rest = first + "0123456789";
+    var n = index;
+    var name = first.charAt(n % first.length);
+    n = Math.floor(n / first.length);
+    while (n > 0) {
+      n--;
+      name += rest.charAt(n % rest.length);
+      n = Math.floor(n / rest.length);
+    }
+    return name;
+  };
+
+  var tokenizeJsForCompress = function (src) {
+    var tokens = [];
+    var i = 0;
+    var len = src.length;
+    var lastMeaningful = "";
+
+    while (i < len) {
+      var ch = src.charAt(i);
+      var next = i + 1 < len ? src.charAt(i + 1) : "";
+
+      if (ch === "/" && next === "/") {
+        i += 2;
+        while (i < len && src.charAt(i) !== "\n" && src.charAt(i) !== "\r") i++;
+        continue;
+      }
+
+      if (ch === "/" && next === "*") {
+        i += 2;
+        while (i < len && !(src.charAt(i) === "*" && i + 1 < len && src.charAt(i + 1) === "/")) i++;
+        i += 2;
+        tokens.push({ type: "ws", value: " " });
+        continue;
+      }
+
+      if (ch === "'" || ch === '"' || ch === "`") {
+        var quote = ch;
+        var start = i;
+        i++;
+        while (i < len) {
+          var qch = src.charAt(i);
+          if (qch === "\\") {
+            i += 2;
+            continue;
+          }
+          i++;
+          if (qch === quote) break;
+        }
+        var lit = src.slice(start, i);
+        tokens.push({ type: "string", value: lit });
+        lastMeaningful = lit;
+        continue;
+      }
+
+      if (ch === "/" && next !== "/" && next !== "*") {
+        var canBeRegex = !lastMeaningful ||
+          /[=(![{?:;,~&|^+-<>/*%]$/.test(lastMeaningful) ||
+          lastMeaningful === "return" || lastMeaningful === "case" ||
+          lastMeaningful === "throw" || lastMeaningful === "typeof" ||
+          lastMeaningful === "void" || lastMeaningful === "delete" ||
+          lastMeaningful === "in" || lastMeaningful === "instanceof" ||
+          lastMeaningful === "new" || lastMeaningful === "of";
+        if (canBeRegex) {
+          var rStart = i;
+          i++;
+          var inClass = false;
+          while (i < len) {
+            var rch = src.charAt(i);
+            if (rch === "\\") {
+              i += 2;
+              continue;
+            }
+            if (rch === "[") inClass = true;
+            else if (rch === "]") inClass = false;
+            else if (rch === "/" && !inClass) {
+              i++;
+              while (i < len && isIdentPart(src.charAt(i))) i++;
+              break;
+            }
+            i++;
+          }
+          var rx = src.slice(rStart, i);
+          tokens.push({ type: "regex", value: rx });
+          lastMeaningful = rx;
+          continue;
+        }
+      }
+
+      if (ch === " " || ch === "\t" || ch === "\r" || ch === "\n") {
+        var hasNewline = false;
+        while (i < len && (src.charAt(i) === " " || src.charAt(i) === "\t" || src.charAt(i) === "\r" || src.charAt(i) === "\n")) {
+          if (src.charAt(i) === "\n" || src.charAt(i) === "\r") hasNewline = true;
+          i++;
+        }
+        tokens.push({ type: "ws", value: hasNewline ? "\n" : " " });
+        continue;
+      }
+
+      if (isIdentStart(ch)) {
+        var idStart = i;
+        i++;
+        while (i < len && isIdentPart(src.charAt(i))) i++;
+        var word = src.slice(idStart, i);
+        var kind = hasOwn.call(JS_KEYWORDS, word) ? "keyword" : "ident";
+        tokens.push({ type: kind, value: word });
+        lastMeaningful = word;
+        continue;
+      }
+
+      var three = i + 2 < len ? src.slice(i, i + 3) : "";
+      var two = i + 1 < len ? src.slice(i, i + 2) : "";
+      var op = ch;
+      if (three === "===" || three === "!==" || three === ">>>" || three === "<<=" || three === ">>=") {
+        op = three;
+        i += 3;
+      } else if (
+        two === "==" || two === "!=" || two === "<=" || two === ">=" ||
+        two === "&&" || two === "||" || two === "??" || two === "++" ||
+        two === "--" || two === "+=" || two === "-=" || two === "*=" ||
+        two === "/=" || two === "%=" || two === "**" || two === "=>" ||
+        two === "?." || two === "<<" || two === ">>"
+      ) {
+        op = two;
+        i += 2;
+      } else {
+        i += 1;
+      }
+      tokens.push({ type: "punct", value: op });
+      lastMeaningful = op;
+    }
+
+    return tokens;
+  };
+
+  var needsSpaceBetween = function (prev, curr) {
+    if (!prev || !curr) return false;
+    var pIsWord = prev.type === "ident" || prev.type === "keyword";
+    var cIsWord = curr.type === "ident" || curr.type === "keyword";
+    var pIsNum = prev.type === "number";
+    var cIsNum = curr.type === "number";
+
+    if ((pIsWord || pIsNum) && (cIsWord || cIsNum)) return true;
+    if (prev.value === "+" && curr.value.indexOf("+") === 0) return true;
+    if (prev.value === "-" && curr.value.indexOf("-") === 0) return true;
+    if (prev.value === "/" && curr.type === "regex") return true;
+    return false;
+  };
+
+  var compress = function (code, opts) {
+    var options = opts || {};
+    var source = String(isNil(code) ? "" : code);
+    var shouldMangle = options.mangle !== false;
+    var tokens = tokenizeJsForCompress(source);
+
+    var declCounts = {};
+    var i;
+    if (shouldMangle) {
+      for (i = 0; i < tokens.length; i++) {
+        if (tokens[i].type === "keyword" && (tokens[i].value === "var" || tokens[i].value === "let" || tokens[i].value === "const")) {
+          var j = i + 1;
+          while (j < tokens.length) {
+            if (tokens[j].type === "ws") { j++; continue; }
+            if (tokens[j].type === "ident") {
+              var varName = tokens[j].value;
+              declCounts[varName] = (hasOwn.call(declCounts, varName) ? declCounts[varName] : 0) + 1;
+            }
+            if (tokens[j].value === ";" || tokens[j].value === "\n") break;
+            j++;
+          }
+        }
+      }
+    }
+
+    var reservedNames = {};
+    for (i = 0; i < tokens.length; i++) {
+      if (tokens[i].type === "ident") {
+        var id = tokens[i].value;
+        if (!hasOwn.call(declCounts, id)) reservedNames[id] = true;
+      }
+    }
+
+    var renameMap = {};
+    var nextShortIdx = 0;
+    if (shouldMangle) {
+      for (i = 0; i < tokens.length; i++) {
+        if (tokens[i].type === "ident") {
+          var name = tokens[i].value;
+          if (hasOwn.call(declCounts, name) && !hasOwn.call(renameMap, name)) {
+            var candidate;
+            do {
+              candidate = makeShortName(nextShortIdx++);
+            } while (hasOwn.call(JS_KEYWORDS, candidate) || hasOwn.call(reservedNames, candidate) || hasOwn.call(renameMap, candidate));
+            if (candidate.length < name.length) renameMap[name] = candidate;
+            else renameMap[name] = name;
+          }
+        }
+      }
+    }
+
+    var compacted = [];
+    for (i = 0; i < tokens.length; i++) {
+      var tk = tokens[i];
+      if (tk.type === "ident" && hasOwn.call(renameMap, tk.value)) {
+        compacted.push({ type: "ident", value: renameMap[tk.value] });
+      } else if (/^\d+(\.\d+)?([eE][+-]?\d+)?$/.test(tk.value) && tk.type === "ident") {
+        compacted.push({ type: "number", value: tk.value });
+      } else {
+        compacted.push(tk);
+      }
+    }
+
+    var out = "";
+    var lastOutToken = null;
+    var pendingNewline = false;
+
+    for (i = 0; i < compacted.length; i++) {
+      var cur = compacted[i];
+      if (cur.type === "ws") {
+        if (cur.value === "\n") pendingNewline = true;
+        continue;
+      }
+
+      if (pendingNewline && lastOutToken) {
+        var canDropNewline =
+          /[{([=+\-*/%&|^?:;,~<>!]$/.test(lastOutToken.value) ||
+          /^[})\]=+\-*/%&|^?:;,~<>!]/.test(cur.value) ||
+          cur.value === "else";
+        if (!canDropNewline && needsSpaceBetween(lastOutToken, cur)) {
+          out += "\n";
+        }
+      } else if (needsSpaceBetween(lastOutToken, cur)) {
+        out += " ";
+      }
+
+      out += cur.value;
+      lastOutToken = cur;
+      pendingNewline = false;
+    }
+
+    out = trim(out);
+
+    var originalBytes = utf8Encode(source).length;
+    var compressedBytes = utf8Encode(out).length;
+    var savedBytes = originalBytes - compressedBytes;
+    var ratio = originalBytes > 0 ? roundTo((savedBytes / originalBytes) * 100, 2) : 0;
+
+    return {
+      code: out,
+      originalBytes: originalBytes,
+      compressedBytes: compressedBytes,
+      savedBytes: savedBytes,
+      ratio: ratio,
+      renamed: renameMap
+    };
+  };
+
   return {
-    version: "2.0.0",
+    version: "1.1.1",
     era: era,
     typeOf: typeOf,
     isNil: isNil,
@@ -1261,6 +1537,8 @@
       copyText: copyText
     },
     date: dateUtils,
-    encoding: encoding
+    encoding: encoding,
+    compress: compress,
+    minify: compress
   };
 }));
