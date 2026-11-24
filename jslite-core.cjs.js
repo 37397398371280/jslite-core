@@ -34,7 +34,7 @@
       var highest = "ES3";
       var order = [
         ["ES5", caps.es5],
-        ["ES6 (ES2015)", caps.es6],
+        ["ES6", caps.es6],
         ["ES2016", caps.es2016],
         ["ES2017", caps.es2017],
         ["ES2018", caps.es2018],
@@ -51,10 +51,7 @@
       for (i = 0; i < order.length; i++) {
         if (order[i][1]) highest = order[i][0];
       }
-      return {
-        highest: highest,
-        capabilities: caps
-      };
+      return { highest: highest, capabilities: caps };
     },
     isAtLeast: function (yearOrVer) {
       var info = era.detect().capabilities;
@@ -117,6 +114,14 @@
     return false;
   };
 
+  var indexOfRef = function (list, target) {
+    var i;
+    for (i = 0; i < list.length; i++) {
+      if (list[i] === target) return i;
+    }
+    return -1;
+  };
+
   var each = function (collection, iteratee) {
     if (isNil(collection)) return collection;
     var i, len, key;
@@ -125,14 +130,10 @@
         if (iteratee(collection[i], i, collection) === false) break;
       }
     } else if (typeof Map === "function" && collection instanceof Map) {
-      collection.forEach(function (val, k) {
-        iteratee(val, k, collection);
-      });
+      collection.forEach(function (val, k) { iteratee(val, k, collection); });
     } else if (typeof Set === "function" && collection instanceof Set) {
       var idx = 0;
-      collection.forEach(function (val) {
-        iteratee(val, idx++, collection);
-      });
+      collection.forEach(function (val) { iteratee(val, idx++, collection); });
     } else if (isObj(collection)) {
       for (key in collection) {
         if (hasOwn.call(collection, key)) {
@@ -146,17 +147,13 @@
   var map = function (collection, iteratee) {
     var fn = isFn(iteratee) ? iteratee : function (item) { return isNil(item) ? undefined : item[iteratee]; };
     var out = [];
-    each(collection, function (val, key, col) {
-      out.push(fn(val, key, col));
-    });
+    each(collection, function (val, key, col) { out.push(fn(val, key, col)); });
     return out;
   };
 
   var filter = function (collection, predicate) {
     var out = [];
-    each(collection, function (val, key, col) {
-      if (predicate(val, key, col)) out.push(val);
-    });
+    each(collection, function (val, key, col) { if (predicate(val, key, col)) out.push(val); });
     return out;
   };
 
@@ -169,12 +166,8 @@
     var acc = hasInit ? initial : undefined;
     var started = hasInit;
     each(collection, function (val, key, col) {
-      if (!started) {
-        acc = val;
-        started = true;
-      } else {
-        acc = reducer(acc, val, key, col);
-      }
+      if (!started) { acc = val; started = true; }
+      else { acc = reducer(acc, val, key, col); }
     });
     return acc;
   };
@@ -182,10 +175,7 @@
   var find = function (collection, predicate) {
     var found;
     each(collection, function (val, key, col) {
-      if (predicate(val, key, col)) {
-        found = val;
-        return false;
-      }
+      if (predicate(val, key, col)) { found = val; return false; }
     });
     return found;
   };
@@ -202,10 +192,7 @@
   var some = function (collection, predicate) {
     var matched = false;
     each(collection, function (val, key, col) {
-      if (predicate(val, key, col)) {
-        matched = true;
-        return false;
-      }
+      if (predicate(val, key, col)) { matched = true; return false; }
     });
     return matched;
   };
@@ -213,10 +200,7 @@
   var every = function (collection, predicate) {
     var all = true;
     each(collection, function (val, key, col) {
-      if (!predicate(val, key, col)) {
-        all = false;
-        return false;
-      }
+      if (!predicate(val, key, col)) { all = false; return false; }
     });
     return all;
   };
@@ -247,34 +231,25 @@
       var i, item;
       for (i = 0; i < list.length; i++) {
         item = list[i];
-        if (isArr(item) && d > 0) {
-          out = out.concat(walk(item, d - 1));
-        } else {
-          out.push(item);
-        }
+        if (isArr(item) && d > 0) out = out.concat(walk(item, d - 1));
+        else out.push(item);
       }
       return out;
     };
     return walk(arr || [], maxDepth);
   };
 
-  var flatMap = function (arr, fn) {
-    return flatten(map(arr, fn), 1);
-  };
+  var flatMap = function (arr, fn) { return flatten(map(arr, fn), 1); };
 
   var chunk = function (arr, size) {
     var n = Math.max(1, size || 1);
     var out = [];
     var i;
-    for (i = 0; i < (arr || []).length; i += n) {
-      out.push(arr.slice(i, i + n));
-    }
+    for (i = 0; i < (arr || []).length; i += n) out.push(arr.slice(i, i + n));
     return out;
   };
 
-  var compact = function (arr) {
-    return filter(arr || [], function (x) { return !!x; });
-  };
+  var compact = function (arr) { return filter(arr || [], function (x) { return !!x; }); };
 
   var unique = function (arr, keyFn) {
     var fn = isFn(keyFn) ? keyFn : function (x) { return x; };
@@ -282,10 +257,7 @@
     var out = [];
     each(arr || [], function (item) {
       var k = fn(item);
-      if (!includes(seen, k)) {
-        seen.push(k);
-        out.push(item);
-      }
+      if (!includes(seen, k)) { seen.push(k); out.push(item); }
     });
     return out;
   };
@@ -314,9 +286,7 @@
   var keyBy = function (arr, keyOrFn) {
     var fn = isFn(keyOrFn) ? keyOrFn : function (item) { return isNil(item) ? "undefined" : item[keyOrFn]; };
     var out = {};
-    each(arr || [], function (item) {
-      out[String(fn(item))] = item;
-    });
+    each(arr || [], function (item) { out[String(fn(item))] = item; });
     return out;
   };
 
@@ -344,9 +314,7 @@
     var out = [];
     for (i = 0; i < maxLen; i++) {
       row = [];
-      for (j = 0; j < arrays.length; j++) {
-        row.push(isArr(arrays[j]) ? arrays[j][i] : undefined);
-      }
+      for (j = 0; j < arrays.length; j++) row.push(isArr(arrays[j]) ? arrays[j][i] : undefined);
       out.push(row);
     }
     return out;
@@ -358,11 +326,8 @@
     var st = isNum(step) && step !== 0 ? step : (s <= e ? 1 : -1);
     var out = [];
     var cur = s;
-    if (st > 0) {
-      while (cur < e) { out.push(cur); cur += st; }
-    } else {
-      while (cur > e) { out.push(cur); cur += st; }
-    }
+    if (st > 0) { while (cur < e) { out.push(cur); cur += st; } }
+    else { while (cur > e) { out.push(cur); cur += st; } }
     return out;
   };
 
@@ -370,14 +335,10 @@
     toArray: function (s) {
       if (isArr(s)) return unique(s);
       var out = [];
-      if (typeof Set === "function" && s instanceof Set) {
-        s.forEach(function (v) { out.push(v); });
-      }
+      if (typeof Set === "function" && s instanceof Set) s.forEach(function (v) { out.push(v); });
       return out;
     },
-    union: function (a, b) {
-      return unique(setOps.toArray(a).concat(setOps.toArray(b)));
-    },
+    union: function (a, b) { return unique(setOps.toArray(a).concat(setOps.toArray(b))); },
     intersection: function (a, b) {
       var arrB = setOps.toArray(b);
       return filter(setOps.toArray(a), function (x) { return includes(arrB, x); });
@@ -386,16 +347,12 @@
       var arrB = setOps.toArray(b);
       return filter(setOps.toArray(a), function (x) { return !includes(arrB, x); });
     },
-    symmetricDifference: function (a, b) {
-      return setOps.union(setOps.difference(a, b), setOps.difference(b, a));
-    },
+    symmetricDifference: function (a, b) { return setOps.union(setOps.difference(a, b), setOps.difference(b, a)); },
     isSubsetOf: function (a, b) {
       var arrB = setOps.toArray(b);
       return every(setOps.toArray(a), function (x) { return includes(arrB, x); });
     },
-    isSupersetOf: function (a, b) {
-      return setOps.isSubsetOf(b, a);
-    },
+    isSupersetOf: function (a, b) { return setOps.isSubsetOf(b, a); },
     isDisjointFrom: function (a, b) {
       var arrB = setOps.toArray(b);
       return !some(setOps.toArray(a), function (x) { return includes(arrB, x); });
@@ -426,14 +383,11 @@
     for (i = 0; i < parts.length; i++) {
       k = parts[i];
       if (!k) continue;
-      if (i === parts.length - 1) {
-        cur[k] = value;
-      } else {
+      if (i === parts.length - 1) cur[k] = value;
+      else {
         nextK = parts[i + 1];
         isNextIndex = /^\d+$/.test(nextK);
-        if (!isObj(cur[k])) {
-          cur[k] = isNextIndex ? [] : {};
-        }
+        if (!isObj(cur[k])) cur[k] = isNextIndex ? [] : {};
         cur = cur[k];
       }
     }
@@ -445,62 +399,66 @@
     if (Object.keys) return Object.keys(obj);
     var out = [];
     var k;
-    for (k in obj) {
-      if (hasOwn.call(obj, k)) out.push(k);
-    }
+    for (k in obj) if (hasOwn.call(obj, k)) out.push(k);
     return out;
   };
 
-  var valuesOf = function (obj) {
-    return map(keysOf(obj), function (k) { return obj[k]; });
-  };
-
-  var entriesOf = function (obj) {
-    return map(keysOf(obj), function (k) { return [k, obj[k]]; });
-  };
-
+  var valuesOf = function (obj) { return map(keysOf(obj), function (k) { return obj[k]; }); };
+  var entriesOf = function (obj) { return map(keysOf(obj), function (k) { return [k, obj[k]]; }); };
   var fromEntries = function (entries) {
     var out = {};
     each(entries || [], function (pair) {
-      if (isArr(pair) && pair.length >= 2) {
-        out[String(pair[0])] = pair[1];
-      }
+      if (isArr(pair) && pair.length >= 2) out[String(pair[0])] = pair[1];
     });
     return out;
   };
 
   var pick = function (obj, keys) {
     var out = {};
-    each(keys || [], function (k) {
-      if (isObj(obj) && hasOwn.call(obj, k)) {
-        out[k] = obj[k];
-      }
-    });
+    each(keys || [], function (k) { if (isObj(obj) && hasOwn.call(obj, k)) out[k] = obj[k]; });
     return out;
   };
 
   var omit = function (obj, keys) {
     var out = {};
-    each(keysOf(obj), function (k) {
-      if (!includes(keys || [], k)) {
-        out[k] = obj[k];
-      }
-    });
+    each(keysOf(obj), function (k) { if (!includes(keys || [], k)) out[k] = obj[k]; });
     return out;
   };
 
-  var clone = function (val, deep) {
+  var cloneWithSeen = function (val, deep, seenSources, seenClones) {
     if (!isObj(val)) return val;
+    var existingIdx = indexOfRef(seenSources, val);
+    if (existingIdx !== -1) return seenClones[existingIdx];
+
     if (val instanceof Date) return new Date(val.getTime());
-    if (val instanceof RegExp) return new RegExp(val.source, (val.global ? "g" : "") + (val.ignoreCase ? "i" : "") + (val.multiline ? "m" : ""));
-    if (isArr(val)) {
-      return map(val, function (item) { return deep ? clone(item, true) : item; });
+    if (val instanceof RegExp) {
+      return new RegExp(val.source, (val.global ? "g" : "") + (val.ignoreCase ? "i" : "") + (val.multiline ? "m" : ""));
     }
-    var out = {};
-    each(keysOf(val), function (k) {
-      out[k] = deep ? clone(val[k], true) : val[k];
-    });
-    return out;
+    if (isArr(val)) {
+      var arrCopy = [];
+      seenSources.push(val);
+      seenClones.push(arrCopy);
+      var i;
+      for (i = 0; i < val.length; i++) {
+        arrCopy.push(deep ? cloneWithSeen(val[i], true, seenSources, seenClones) : val[i]);
+      }
+      return arrCopy;
+    }
+
+    var objCopy = {};
+    seenSources.push(val);
+    seenClones.push(objCopy);
+    var ks = keysOf(val);
+    var j, k;
+    for (j = 0; j < ks.length; j++) {
+      k = ks[j];
+      objCopy[k] = deep ? cloneWithSeen(val[k], true, seenSources, seenClones) : val[k];
+    }
+    return objCopy;
+  };
+
+  var clone = function (val, deep) {
+    return cloneWithSeen(val, !!deep, [], []);
   };
 
   var merge = function () {
@@ -512,42 +470,56 @@
       if (!isObj(src)) continue;
       for (k in src) {
         if (!hasOwn.call(src, k)) continue;
-        if (isPlainObj(src[k]) && isPlainObj(target[k])) {
-          target[k] = merge(target[k], src[k]);
-        } else {
-          target[k] = clone(src[k], true);
-        }
+        if (isPlainObj(src[k]) && isPlainObj(target[k])) target[k] = merge(target[k], src[k]);
+        else target[k] = clone(src[k], true);
       }
     }
     return target;
   };
 
-  var equal = function (a, b) {
+  var equalWithSeen = function (a, b, seenA, seenB) {
     if (a === b) return true;
     if (typeof a === "number" && typeof b === "number" && isNaN(a) && isNaN(b)) return true;
     if (isNil(a) || isNil(b) || typeof a !== typeof b) return false;
     if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
     if (a instanceof RegExp && b instanceof RegExp) return a.toString() === b.toString();
+
     if (isArr(a) && isArr(b)) {
       if (a.length !== b.length) return false;
+      var idxA = indexOfRef(seenA, a);
+      var idxB = indexOfRef(seenB, b);
+      if (idxA !== -1 || idxB !== -1) return idxA === idxB && seenB[idxA] === b;
+      seenA.push(a);
+      seenB.push(b);
       var i;
       for (i = 0; i < a.length; i++) {
-        if (!equal(a[i], b[i])) return false;
+        if (!equalWithSeen(a[i], b[i], seenA, seenB)) return false;
       }
       return true;
     }
+
     if (isObj(a) && isObj(b)) {
       var ka = keysOf(a);
       var kb = keysOf(b);
-      var j, key;
       if (ka.length !== kb.length) return false;
+      var pIdxA = indexOfRef(seenA, a);
+      var pIdxB = indexOfRef(seenB, b);
+      if (pIdxA !== -1 || pIdxB !== -1) return pIdxA === pIdxB && seenB[pIdxA] === b;
+      seenA.push(a);
+      seenB.push(b);
+      var j, key;
       for (j = 0; j < ka.length; j++) {
         key = ka[j];
-        if (!hasOwn.call(b, key) || !equal(a[key], b[key])) return false;
+        if (!hasOwn.call(b, key) || !equalWithSeen(a[key], b[key], seenA, seenB)) return false;
       }
       return true;
     }
+
     return false;
+  };
+
+  var equal = function (a, b) {
+    return equalWithSeen(a, b, [], []);
   };
 
   var trim = function (str) {
@@ -605,9 +577,7 @@
 
   var escapeRegex = function (str) {
     var s = String(isNil(str) ? "" : str);
-    if (typeof RegExp !== "undefined" && isFn(RegExp.escape)) {
-      return RegExp.escape(s);
-    }
+    if (typeof RegExp !== "undefined" && isFn(RegExp.escape)) return RegExp.escape(s);
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   };
 
@@ -635,10 +605,7 @@
       .toLowerCase();
   };
 
-  var snakeCase = function (str) {
-    return replaceAll(kebabCase(str), "-", "_");
-  };
-
+  var snakeCase = function (str) { return replaceAll(kebabCase(str), "-", "_"); };
   var capitalize = function (str) {
     var s = String(isNil(str) ? "" : str);
     return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
@@ -667,9 +634,7 @@
         if (hasOwn.call(out, k)) {
           if (!isArr(out[k])) out[k] = [out[k]];
           out[k].push(v);
-        } else {
-          out[k] = v;
-        }
+        } else { out[k] = v; }
       }
       return out;
     },
@@ -680,9 +645,7 @@
         if (isNil(val)) return;
         if (isArr(val)) {
           each(val, function (item) {
-            if (!isNil(item)) {
-              parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(item)));
-            }
+            if (!isNil(item)) parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(item)));
           });
         } else {
           parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(val)));
@@ -692,16 +655,10 @@
     }
   };
 
-  var clamp = function (num, min, max) {
-    if (num < min) return min;
-    if (num > max) return max;
-    return num;
-  };
+  var clamp = function (num, min, max) { return num < min ? min : (num > max ? max : num); };
 
   var sumPrecise = function (values) {
-    if (typeof Math !== "undefined" && isFn(Math.sumPrecise)) {
-      return Math.sumPrecise(values);
-    }
+    if (typeof Math !== "undefined" && isFn(Math.sumPrecise)) return Math.sumPrecise(values);
     var sum = 0;
     var comp = 0;
     var i, y, t;
@@ -729,10 +686,7 @@
     var called = false;
     var result;
     return function () {
-      if (!called) {
-        called = true;
-        result = fn.apply(this, arguments);
-      }
+      if (!called) { called = true; result = fn.apply(this, arguments); }
       return result;
     };
   };
@@ -750,16 +704,12 @@
 
   var pipe = function () {
     var fns = slice.call(arguments);
-    return function (initial) {
-      return reduce(fns, function (acc, fn) { return fn(acc); }, initial);
-    };
+    return function (initial) { return reduce(fns, function (acc, fn) { return fn(acc); }, initial); };
   };
 
   var compose = function () {
     var fns = slice.call(arguments).reverse();
-    return function (initial) {
-      return reduce(fns, function (acc, fn) { return fn(acc); }, initial);
-    };
+    return function (initial) { return reduce(fns, function (acc, fn) { return fn(acc); }, initial); };
   };
 
   var debounce = function (fn, wait) {
@@ -769,10 +719,7 @@
       var ctx = this;
       var args = slice.call(arguments);
       if (timer !== null) clearTimeout(timer);
-      timer = setTimeout(function () {
-        timer = null;
-        fn.apply(ctx, args);
-      }, ms);
+      timer = setTimeout(function () { timer = null; fn.apply(ctx, args); }, ms);
     };
   };
 
@@ -797,10 +744,7 @@
             fn.apply(c, a);
           }
         }, ms);
-      } else {
-        queuedArgs = args;
-        queuedCtx = ctx;
-      }
+      } else { queuedArgs = args; queuedCtx = ctx; }
     };
   };
 
@@ -809,38 +753,22 @@
     return pfx + "_" + Math.random().toString(36).slice(2, 8) + "_" + (new Date().getTime()).toString(36).slice(-4);
   };
 
-  var hasPromise = function () {
-    return typeof Promise === "function" && isFn(Promise.resolve);
-  };
+  var hasPromise = function () { return typeof Promise === "function" && isFn(Promise.resolve); };
 
   var withResolvers = function () {
-    if (hasPromise() && isFn(Promise.withResolvers)) {
-      return Promise.withResolvers();
-    }
+    if (hasPromise() && isFn(Promise.withResolvers)) return Promise.withResolvers();
     var resolveFn, rejectFn;
-    var promise = hasPromise() ? new Promise(function (res, rej) {
-      resolveFn = res;
-      rejectFn = rej;
-    }) : null;
-    return {
-      promise: promise,
-      resolve: resolveFn,
-      reject: rejectFn
-    };
+    var promise = hasPromise() ? new Promise(function (res, rej) { resolveFn = res; rejectFn = rej; }) : null;
+    return { promise: promise, resolve: resolveFn, reject: rejectFn };
   };
 
   var sleep = function (ms, cb) {
     if (hasPromise()) {
       return new Promise(function (resolve) {
-        setTimeout(function () {
-          if (isFn(cb)) cb();
-          resolve(ms);
-        }, ms);
+        setTimeout(function () { if (isFn(cb)) cb(); resolve(ms); }, ms);
       });
     }
-    setTimeout(function () {
-      if (isFn(cb)) cb();
-    }, ms);
+    setTimeout(function () { if (isFn(cb)) cb(); }, ms);
     return undefined;
   };
 
@@ -858,10 +786,7 @@
           if (isFn(cb)) cb(null, res);
           return res;
         } catch (err) {
-          if (attempt < retries) {
-            attempt++;
-            return runSync();
-          }
+          if (attempt < retries) { attempt++; return runSync(); }
           if (isFn(cb)) cb(err);
           throw err;
         }
@@ -872,20 +797,15 @@
     return new Promise(function (resolve, reject) {
       var step = function (attempt) {
         var p;
-        try {
-          p = Promise.resolve(fn(attempt));
-        } catch (syncErr) {
-          p = Promise.reject(syncErr);
-        }
+        try { p = Promise.resolve(fn(attempt)); }
+        catch (syncErr) { p = Promise.reject(syncErr); }
         p.then(
           function (val) { resolve(val); },
           function (err) {
             if (attempt < retries) {
               var waitMs = delay * Math.pow(factor, attempt);
               setTimeout(function () { step(attempt + 1); }, waitMs);
-            } else {
-              reject(err);
-            }
+            } else { reject(err); }
           }
         );
       };
@@ -903,7 +823,7 @@
           if (raw === null || raw === undefined) return defVal;
           return typeof JSON !== "undefined" && JSON.parse ? JSON.parse(raw) : raw;
         }
-      } catch (e) { }
+      } catch (e) {}
       return hasOwn.call(memStore, key) ? clone(memStore[key], true) : defVal;
     },
     set: function (key, value) {
@@ -913,20 +833,351 @@
           localStorage.setItem(key, payload);
           return true;
         }
-      } catch (e) { }
+      } catch (e) {}
       memStore[key] = clone(value, true);
       return true;
     },
     remove: function (key) {
       try {
-        if (typeof localStorage !== "undefined" && localStorage) {
-          localStorage.removeItem(key);
-        }
-      } catch (e) { }
+        if (typeof localStorage !== "undefined" && localStorage) localStorage.removeItem(key);
+      } catch (e) {}
       if (hasOwn.call(memStore, key)) {
         try { delete memStore[key]; } catch (e2) { memStore[key] = undefined; }
       }
     }
+  };
+
+  var hasDoc = function () {
+    return typeof document !== "undefined" && document && isFn(document.createElement);
+  };
+
+  var dollar = function (selector, scope) {
+    if (!isStr(selector)) return null;
+    var rootEl = isObj(scope) && isFn(scope.querySelector) ? scope : (hasDoc() && isFn(document.querySelector) ? document : null);
+    if (!rootEl) return null;
+    try { return rootEl.querySelector(selector); } catch (e) { return null; }
+  };
+
+  var dollarAll = function (selector, scope) {
+    if (!isStr(selector)) return [];
+    var rootEl = isObj(scope) && isFn(scope.querySelectorAll) ? scope : (hasDoc() && isFn(document.querySelectorAll) ? document : null);
+    if (!rootEl) return [];
+    try {
+      var list = rootEl.querySelectorAll(selector);
+      var out = [];
+      var i;
+      for (i = 0; i < list.length; i++) out.push(list[i]);
+      return out;
+    } catch (e) { return []; }
+  };
+
+  var on = function (target, eventName, handler, opts) {
+    if (!target || !isStr(eventName) || !isFn(handler)) return function () {};
+    var useCapture = isBool(opts) ? opts : !!(opts && opts.capture);
+    if (isFn(target.addEventListener)) {
+      target.addEventListener(eventName, handler, opts || false);
+      return function () { target.removeEventListener(eventName, handler, opts || false); };
+    }
+    if (isFn(target.attachEvent)) {
+      var legacyName = "on" + eventName;
+      var wrapper = function () {
+        var ev = typeof window !== "undefined" && window.event ? window.event : {};
+        if (!ev.target) ev.target = ev.srcElement;
+        return handler.call(target, ev);
+      };
+      target.attachEvent(legacyName, wrapper);
+      return function () { target.detachEvent(legacyName, wrapper); };
+    }
+    return function () {};
+  };
+
+  var create = function (tagName, attrs, children) {
+    if (!hasDoc() || !isStr(tagName)) return null;
+    var el = document.createElement(tagName);
+    if (isObj(attrs)) {
+      each(keysOf(attrs), function (k) {
+        var v = attrs[k];
+        if (v === null || v === undefined || v === false) return;
+        if (k === "class" || k === "className") {
+          el.className = isArr(v) ? v.join(" ") : String(v);
+        } else if (k === "text") {
+          el.appendChild(document.createTextNode(String(v)));
+        } else if (k === "html") {
+          el.innerHTML = String(v);
+        } else if (k === "style" && isObj(v)) {
+          each(keysOf(v), function (sk) {
+            try { el.style[sk] = String(v[sk]); } catch (e) {}
+          });
+        } else if (k.indexOf("on") === 0 && isFn(v)) {
+          on(el, k.slice(2).toLowerCase(), v);
+        } else if (v === true) {
+          el.setAttribute(k, "");
+        } else {
+          el.setAttribute(k, String(v));
+        }
+      });
+    }
+    if (children !== undefined && children !== null) {
+      var childList = isArr(children) ? children : [children];
+      each(childList, function (ch) {
+        if (ch === null || ch === undefined || ch === false) return;
+        if (isStr(ch) || isNum(ch) || isBool(ch)) {
+          el.appendChild(document.createTextNode(String(ch)));
+        } else if (isObj(ch) && ch.nodeType) {
+          el.appendChild(ch);
+        }
+      });
+    }
+    return el;
+  };
+
+  var copyText = function (text) {
+    var str = String(isNil(text) ? "" : text);
+    if (typeof navigator !== "undefined" && navigator && navigator.clipboard && isFn(navigator.clipboard.writeText) && hasPromise()) {
+      return navigator.clipboard.writeText(str).then(function () { return true; }, function () {
+        return copyTextFallback(str);
+      });
+    }
+    var ok = copyTextFallback(str);
+    return hasPromise() ? Promise.resolve(ok) : ok;
+  };
+
+  var copyTextFallback = function (str) {
+    if (!hasDoc() || !document.body) return false;
+    var ta = document.createElement("textarea");
+    ta.value = str;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    var selected = false;
+    try {
+      ta.select();
+      if (isFn(ta.setSelectionRange)) ta.setSelectionRange(0, str.length);
+      if (isFn(document.execCommand)) selected = !!document.execCommand("copy");
+    } catch (e) {
+      selected = false;
+    }
+    try { document.body.removeChild(ta); } catch (e2) {}
+    return selected;
+  };
+
+  var toDate = function (input) {
+    if (input instanceof Date) return new Date(input.getTime());
+    if (isNum(input)) return new Date(input);
+    if (isStr(input)) {
+      var parsed = Date.parse(input);
+      return isNaN(parsed) ? new Date(NaN) : new Date(parsed);
+    }
+    return new Date();
+  };
+
+  var dateUtils = {
+    now: function () {
+      return new Date().getTime();
+    },
+    isValid: function (input) {
+      var d = input instanceof Date ? input : toDate(input);
+      var t = d.getTime();
+      return typeof t === "number" && !isNaN(t) && isFinite(t);
+    },
+    format: function (input, pattern, useUtc) {
+      var d = toDate(input);
+      if (!dateUtils.isValid(d)) return "";
+      var fmt = isStr(pattern) && pattern ? pattern : "YYYY-MM-DD";
+      var year = useUtc ? d.getUTCFullYear() : d.getFullYear();
+      var month = (useUtc ? d.getUTCMonth() : d.getMonth()) + 1;
+      var day = useUtc ? d.getUTCDate() : d.getDate();
+      var hours = useUtc ? d.getUTCHours() : d.getHours();
+      var mins = useUtc ? d.getUTCMinutes() : d.getMinutes();
+      var secs = useUtc ? d.getUTCSeconds() : d.getSeconds();
+      var ms = useUtc ? d.getUTCMilliseconds() : d.getMilliseconds();
+
+      var tokens = {
+        YYYY: padStart(Math.abs(year), 4, "0"),
+        YY: padStart(Math.abs(year) % 100, 2, "0"),
+        MM: padStart(month, 2, "0"),
+        M: String(month),
+        DD: padStart(day, 2, "0"),
+        D: String(day),
+        HH: padStart(hours, 2, "0"),
+        H: String(hours),
+        mm: padStart(mins, 2, "0"),
+        m: String(mins),
+        ss: padStart(secs, 2, "0"),
+        s: String(secs),
+        SSS: padStart(ms, 3, "0")
+      };
+
+      return fmt.replace(/YYYY|YY|MM|M|DD|D|HH|H|mm|m|ss|s|SSS/g, function (tok) {
+        return hasOwn.call(tokens, tok) ? tokens[tok] : tok;
+      });
+    },
+    addDays: function (input, days) {
+      var d = toDate(input);
+      if (!dateUtils.isValid(d)) return new Date(NaN);
+      var n = isNum(days) ? days : 0;
+      return new Date(d.getTime() + n * 86400000);
+    },
+    diffDays: function (startInput, endInput) {
+      var a = toDate(startInput);
+      var b = toDate(endInput);
+      if (!dateUtils.isValid(a) || !dateUtils.isValid(b)) return NaN;
+      return (b.getTime() - a.getTime()) / 86400000;
+    },
+    startOfDay: function (input, useUtc) {
+      var d = toDate(input);
+      if (!dateUtils.isValid(d)) return new Date(NaN);
+      if (useUtc) return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+    }
+  };
+
+  var B64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+  var utf8Encode = function (str) {
+    var s = String(isNil(str) ? "" : str);
+    var out = [];
+    var i, code;
+    for (i = 0; i < s.length; i++) {
+      code = s.charCodeAt(i);
+      if (code >= 0xD800 && code <= 0xDBFF && i + 1 < s.length) {
+        var next = s.charCodeAt(i + 1);
+        if (next >= 0xDC00 && next <= 0xDFFF) {
+          code = 0x10000 + ((code - 0xD800) << 10) + (next - 0xDC00);
+          i++;
+        }
+      }
+      if (code < 0x80) {
+        out.push(code);
+      } else if (code < 0x800) {
+        out.push(0xC0 | (code >> 6), 0x80 | (code & 0x3F));
+      } else if (code < 0x10000) {
+        out.push(0xE0 | (code >> 12), 0x80 | ((code >> 6) & 0x3F), 0x80 | (code & 0x3F));
+      } else {
+        out.push(
+          0xF0 | (code >> 18),
+          0x80 | ((code >> 12) & 0x3F),
+          0x80 | ((code >> 6) & 0x3F),
+          0x80 | (code & 0x3F)
+        );
+      }
+    }
+    return out;
+  };
+
+  var utf8Decode = function (bytes) {
+    var list = isArr(bytes) ? bytes : [];
+    var out = "";
+    var i = 0;
+    var b1, b2, b3, b4, cp;
+    while (i < list.length) {
+      b1 = list[i++] & 0xFF;
+      if (b1 < 0x80) {
+        out += String.fromCharCode(b1);
+      } else if (b1 >= 0xC0 && b1 < 0xE0 && i < list.length) {
+        b2 = list[i++] & 0x3F;
+        out += String.fromCharCode(((b1 & 0x1F) << 6) | b2);
+      } else if (b1 >= 0xE0 && b1 < 0xF0 && i + 1 < list.length) {
+        b2 = list[i++] & 0x3F;
+        b3 = list[i++] & 0x3F;
+        out += String.fromCharCode(((b1 & 0x0F) << 12) | (b2 << 6) | b3);
+      } else if (b1 >= 0xF0 && i + 2 < list.length) {
+        b2 = list[i++] & 0x3F;
+        b3 = list[i++] & 0x3F;
+        b4 = list[i++] & 0x3F;
+        cp = (((b1 & 0x07) << 18) | (b2 << 12) | (b3 << 6) | b4) - 0x10000;
+        out += String.fromCharCode(0xD800 + ((cp >> 10) & 0x3FF), 0xDC00 + (cp & 0x3FF));
+      } else {
+        out += String.fromCharCode(b1);
+      }
+    }
+    return out;
+  };
+
+  var bytesToBase64 = function (bytes) {
+    var out = "";
+    var i, b1, b2, b3, enc1, enc2, enc3, enc4;
+    for (i = 0; i < bytes.length; i += 3) {
+      b1 = bytes[i] & 0xFF;
+      b2 = i + 1 < bytes.length ? bytes[i + 1] & 0xFF : NaN;
+      b3 = i + 2 < bytes.length ? bytes[i + 2] & 0xFF : NaN;
+
+      enc1 = b1 >> 2;
+      enc2 = ((b1 & 0x03) << 4) | (isNaN(b2) ? 0 : (b2 >> 4));
+      enc3 = isNaN(b2) ? 64 : (((b2 & 0x0F) << 2) | (isNaN(b3) ? 0 : (b3 >> 6)));
+      enc4 = isNaN(b3) ? 64 : (b3 & 0x3F);
+
+      out += B64_CHARS.charAt(enc1) + B64_CHARS.charAt(enc2);
+      out += enc3 === 64 ? "=" : B64_CHARS.charAt(enc3);
+      out += enc4 === 64 ? "=" : B64_CHARS.charAt(enc4);
+    }
+    return out;
+  };
+
+  var base64ToBytes = function (b64) {
+    var clean = String(isNil(b64) ? "" : b64).replace(/[^A-Za-z0-9+/=]/g, "");
+    var out = [];
+    var i = 0;
+    var c1, c2, c3, c4, e1, e2, e3, e4;
+    while (i < clean.length) {
+      c1 = clean.charAt(i++);
+      c2 = i < clean.length ? clean.charAt(i++) : "=";
+      c3 = i < clean.length ? clean.charAt(i++) : "=";
+      c4 = i < clean.length ? clean.charAt(i++) : "=";
+
+      e1 = B64_CHARS.indexOf(c1);
+      e2 = B64_CHARS.indexOf(c2);
+      e3 = c3 === "=" ? 64 : B64_CHARS.indexOf(c3);
+      e4 = c4 === "=" ? 64 : B64_CHARS.indexOf(c4);
+
+      if (e1 < 0 || e2 < 0 || (c3 !== "=" && e3 < 0) || (c4 !== "=" && e4 < 0)) break;
+
+      out.push(((e1 << 2) | (e2 >> 4)) & 0xFF);
+      if (e3 !== 64) {
+        out.push((((e2 & 0x0F) << 4) | (e3 >> 2)) & 0xFF);
+      }
+      if (e4 !== 64) {
+        out.push((((e3 & 0x03) << 6) | e4) & 0xFF);
+      }
+    }
+    return out;
+  };
+
+  var bytesToHex = function (bytes) {
+    var out = "";
+    var i, b;
+    for (i = 0; i < bytes.length; i++) {
+      b = bytes[i] & 0xFF;
+      out += (b < 16 ? "0" : "") + b.toString(16);
+    }
+    return out;
+  };
+
+  var hexToBytes = function (hex) {
+    var clean = trim(String(isNil(hex) ? "" : hex)).replace(/^0x/i, "");
+    var out = [];
+    var i, val;
+    for (i = 0; i < clean.length; i += 2) {
+      if (i + 1 >= clean.length) break;
+      val = parseInt(clean.slice(i, i + 2), 16);
+      if (isNaN(val)) break;
+      out.push(val & 0xFF);
+    }
+    return out;
+  };
+
+  var encoding = {
+    utf8Encode: utf8Encode,
+    utf8Decode: utf8Decode,
+    base64Encode: function (str) { return bytesToBase64(utf8Encode(str)); },
+    base64Decode: function (b64) { return utf8Decode(base64ToBytes(b64)); },
+    base64EncodeBytes: bytesToBase64,
+    base64DecodeBytes: base64ToBytes,
+    hexEncode: function (str) { return bytesToHex(utf8Encode(str)); },
+    hexDecode: function (hex) { return utf8Decode(hexToBytes(hex)); },
+    hexEncodeBytes: bytesToHex,
+    hexDecodeBytes: hexToBytes
   };
 
   return {
@@ -1001,6 +1252,15 @@
     withResolvers: withResolvers,
     sleep: sleep,
     retry: retry,
-    storage: storage
+    storage: storage,
+    dom: {
+      $: dollar,
+      $$: dollarAll,
+      on: on,
+      create: create,
+      copyText: copyText
+    },
+    date: dateUtils,
+    encoding: encoding
   };
 }));
