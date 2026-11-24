@@ -7,3 +7,4 @@ A zero-dependency JavaScript lite utility package engineered to parse and execut
 - `lite.esm.mjs`: ES module wrapper with named and default exports.
 - `index.d.ts`: TypeScript definitions.
 - `package.json`: Package manifest with `main`, `module`, `types`, and `exports`.
+- `docs.html`: Standalone HTML documentation and API reference covering installation, era/capability detection (`lite.era`), type guards, collection and set-algebra helpers (`lite.setOps`), object/path/cloning utilities, string/template/query helpers, and math, timing, async, and storage helpers (`lite.storage`).
