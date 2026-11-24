@@ -8,3 +8,4 @@ A zero-dependency JavaScript lite utility package engineered to parse and execut
 - `index.d.ts`: TypeScript definitions.
 - `package.json`: Package manifest with `main`, `module`, `types`, and `exports`.
 - `docs.html`: Standalone HTML documentation and API reference covering installation, era/capability detection (`lite.era`), type guards, collection and set-algebra helpers (`lite.setOps`), object/path/cloning utilities, string/template/query helpers, and math, timing, async, and storage helpers (`lite.storage`).
+- `LICENSE`: GNU General Public License v3.0 (GPL-3.0) text governing usage, modification, and distribution of the package.
