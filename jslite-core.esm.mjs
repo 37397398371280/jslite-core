@@ -2,7 +2,7 @@ const hasOwn = Object.prototype.hasOwnProperty;
 const toStr = Object.prototype.toString;
 const slice = Array.prototype.slice;
 
-export const version = "2.0.0";
+export const version = "1.1.0";
 
 export const era = {
   detect() {
