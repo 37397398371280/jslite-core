@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>jslite-core (v1.1.1) Documentation</title>
+  <title>jslite-core (v1.1.2) Documentation</title>
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -90,7 +90,7 @@
   </style>
 </head>
 <body>
-  <h1><code>jslite-core</code> (v1.1.1) Documentation</h1>
+  <h1><code>jslite-core</code> (v1.1.2) Documentation</h1>
   <p>
     <strong><code>jslite-core</code></strong> is a zero-dependency JavaScript lite utility package written in ES3-safe syntax with runtime feature detection and graceful fallbacks spanning <strong>ECMAScript 3 (ES3)</strong> through <strong>ECMAScript 2026 (ES2026)</strong>.
   </p>
@@ -108,6 +108,7 @@
       <li><a href="#dom">7. DOM Helpers (<code>lite.dom</code>)</a></li>
       <li><a href="#date">8. Date Utilities (<code>lite.date</code>)</a></li>
       <li><a href="#encoding">9. Encoding Utilities (<code>lite.encoding</code>)</a></li>
+      <li><a href="#compress">10. Code Compression (<code>lite.compress</code> / <code>lite.minify</code>)</a></li>
     </ul>
   </nav>
 
@@ -120,7 +121,7 @@
     <li><strong><code>readme.md</code> &amp; <code>LICENSE</code>:</strong> Package overview and GNU General Public License v3.0.</li>
   </ul>
   <pre><code>// ES Modules
-import lite, { get, groupBy, dom, date, encoding } from "jslite-core";
+import lite, { get, groupBy, dom, date, encoding, compress } from "jslite-core";
 
 // CommonJS
 const lite = require("jslite-core");
@@ -261,5 +262,19 @@ lite.encoding.base64Decode(b64); // =&gt; "Hello 🌍"
 
 var hex = lite.encoding.hexEncode("ABC");
 lite.encoding.hexDecode(hex); // =&gt; "ABC"</code></pre>
+
+  <h2 id="compress">10. Code Compression (<code>lite.compress</code> / <code>lite.minify</code>)</h2>
+  <p>
+    Strips comments, collapses unnecessary whitespace and newlines, and shortens declared variable names when safe.
+  </p>
+  <pre><code>var res = lite.compress("function demo() { var longName = 1; return longName; }");
+// res.code            -&gt; compressed JS string
+// res.originalBytes   -&gt; byte length before compression
+// res.compressedBytes -&gt; byte length after compression
+// res.savedBytes      -&gt; bytes removed
+// res.ratio           -&gt; percentage saved
+// res.renamed         -&gt; map of shortened variable names
+
+lite.minify(sourceCode, { mangle: false });</code></pre>
 </body>
 </html>
