@@ -1,9 +1,9 @@
 {
   "name": "jslite-core",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Zero-dependency JavaScript lite utility package designed to run from ES3 through ES2026.",
-  "main": "./lite.cjs.js",
-  "module": "./lite.esm.mjs",
+  "main": "./jslite-core.cjs.js",
+  "module": "./jslite-core.esm.mjs",
   "types": "./index.d.ts",
   "repository": {
     "type": "git",
@@ -12,14 +12,14 @@
   "exports": {
     ".": {
       "types": "./index.d.ts",
-      "import": "./lite.esm.mjs",
-      "require": "./lite.cjs.js",
-      "default": "./lite.cjs.js"
+      "import": "./jslite-core.esm.mjs",
+      "require": "./jslite-core.cjs.js",
+      "default": "./jslite-core.cjs.js"
     }
   },
   "files": [
-    "lite.cjs.js",
-    "lite.esm.mjs",
+    "jslite-core.cjs.js",
+    "jslite-core.esm.mjs",
     "index.d.ts",
     "docs.html",
     "readme.md",
